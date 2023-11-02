@@ -1,6 +1,11 @@
 # Wavsurfer
 
-Wavsurfer is a combination of an macOS audio server plug-in that pipes system audio back as a microphone input (audiosapper_plugin), and a simple JUCE app to show the potential of access to the system audio stream by calculating and displaying a smoothed RMS of the audio stream (wavsurfer_app).  
+Wavsurfer is a combination of a macOS Core Audio server plug-in that pipes input back as its output (audiosapper_plugin), and a **very simple** JUCE app to show the potential of access to the system audio stream by calculating and displaying a smoothed RMS of the audio stream (wavsurfer_app). 
+
+![Juce](https://github.com/AurimasBalciunas/wavsurfer/assets/56936689/acbabb62-663a-4521-8439-518e1ca8b89a)
+*The very simple JUCE app*
+
+Audiosapper pipes its input (what a user application would see as a speaker) to its output (what a user application would see as a microphone). So, if audiosapper is set as the system audio output device, any application can listen to the system audio as though it were the input coming from a microphone.
 
 ## Installation
 
@@ -13,9 +18,7 @@ Open wavsurfer_app/wavsurfer.jucer with Projucer, open it in XCode, and run and 
 You can modify the smoothing factor in the range of (0, 1] in wavsurfer_app/MainComponent.cpp to tune the output wave as desired.  
 
 ## Future work
-The audiosapper plugin has some distortion to input sound, especially apparent if you try to it through quicktime player. There are pops here and there in the output, which I *think* have to do with buffer underflow or other real-time constraints, but is something I am working to improve. 
-
-Audiosapper is also currently a huge C file, I hope to convert the plugins to C++.
+The audiosapper plugin has some distortion to input sound, especially apparent if you try to writemix audiosapper's output to multiple listeners (say JUCE + QuickTime player). The issue becomes drastically worse with multiple readers, and I am trying to figure out what is causing this. Maybe some real time constraints. 
 
 Finally, some physics calculations in the JUCE example to have the surfer catch some air could be a fun addition, but is less of a technical challenge than modifications to the CoreAudio plugin.
 
