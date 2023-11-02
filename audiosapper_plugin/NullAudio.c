@@ -166,13 +166,13 @@ static UInt32								gDataSource_Input_Master_Value	= 0;
 static UInt32								gDataSource_Output_Master_Value	= 0;
 static UInt32								gDataDestination_PlayThru_Master_Value	= 0;
 
-//<<--Start SamiRua changes -->>
+//<<--Start audiosapper changes -->>
 static Float32 *gSharedBuffer = NULL;
-//Buffer Size = Sample Rate * Number of Channels * Bit Depth in Bytes * Time In Seconds
-//Buffer Size = 44100 *       2                  * 4                  * 1
-// New Buffer Size = 512               * 2                 * 4 = 4096
+//Buffer Size = Sample Size * Number of Channels * Bit Depth in Bytes 
+// New Buffer Size = 512               * 2                 * 4  = 4096
 static size_t gSharedBufferSize = 4096;
-//<--End SamiRua changes -->>
+
+//<--End audiosapper changes -->>
 
 //==================================================================================================
 #pragma mark -
@@ -4008,13 +4008,13 @@ static OSStatus	NullAudio_StartIO(AudioServerPlugInDriverRef inDriver, AudioObje
 	else if(gDevice_IOIsRunning == 0)
 	{
         
-        //<<-- Start SamiRua changes -->>
-        // Initialize the shared buffer if it hasn't been already
+        //<<-- Start audiosapper changes -->>
+        // Initialize the shared buffer for passing input to output
         if (gSharedBuffer == NULL)
         {
             gSharedBuffer = (Float32 *)malloc(gSharedBufferSize);
         }
-        //<<-- End SamiRua changes -->>
+        //<<-- End audiosapper changes -->>
         
 		//	We need to start the hardware, which in this case is just anchoring the time line.
 		gDevice_IOIsRunning = 1;
@@ -4069,14 +4069,15 @@ static OSStatus	NullAudio_StopIO(AudioServerPlugInDriverRef inDriver, AudioObjec
 		--gDevice_IOIsRunning;
 	}
     
-    // <<-- Start SamiRua Changes
+    // <<-- Start audiosapper Changes
+	// Free the shared buffer memory
     if (gSharedBuffer != NULL)
     {
         free(gSharedBuffer);
         gSharedBuffer = NULL;
         gSharedBufferSize = 0;
     }
-    // -->> End SamiRua changes
+    // -->> End audiosapper changes
 	
 	//	unlock the state lock
 	pthread_mutex_unlock(&gPlugIn_StateMutex);
@@ -4216,28 +4217,25 @@ static OSStatus	NullAudio_DoIOOperation(AudioServerPlugInDriverRef inDriver, Aud
 	FailWithAction(inDeviceObjectID != kObjectID_Device, theAnswer = kAudioHardwareBadObjectError, Done, "NullAudio_DoIOOperation: bad device ID");
 	FailWithAction((inStreamObjectID != kObjectID_Stream_Input) && (inStreamObjectID != kObjectID_Stream_Output), theAnswer = kAudioHardwareBadObjectError, Done, "NullAudio_DoIOOperation: bad stream ID");
 
-    //<<-- Start SamiRua Changes
-    // LEAVE THIS COMMENTED OUT
-//	//	clear the buffer if this iskAudioServerPlugInIOOperationReadInput
-//	if(inOperationID == kAudioServerPlugInIOOperationReadInput)
-//	{
-//		//	we are always dealing with a 2 channel 32 bit float buffer
-//		memset(ioMainBuffer, 0, inIOBufferFrameSize * 8);
-//	}
-    //END section that should be left commented out
-    
-    //Added these lines
-    // For reading input
+    //<<-- Start audiosapper Changes    
+    // Read any input into the buffer
     if (inOperationID == kAudioServerPlugInIOOperationReadInput)
     {
-
         FailWithAction(inIOBufferFrameSize*8 != gSharedBufferSize, theAnswer = kAudioHardwareBadObjectError, Done, "NullAudio_DoIOOperation: ReadInput size did not match shared buffer size.");
         FailWithAction(gSharedBuffer == NULL, theAnswer = kAudioHardwareBadObjectError, Done, "NullAudio_DoIOOperation: ReadInput, sharedBuffer is null.");
         // Store the input for later use in gSharedBuffer
         memcpy(gSharedBuffer, ioMainBuffer, inIOBufferFrameSize * 8);
 
+		//	clear the ioMainBuffer if this iskAudioServerPlugInIOOperationReadInput
+		if(inOperationID == kAudioServerPlugInIOOperationReadInput)
+		{
+			//	we are always dealing with a 2 channel 32 bit float buffer
+			memset(ioMainBuffer, 0, inIOBufferFrameSize * 8);
+		}
+
     }
-    // For writing output
+    
+	// Write the buffer to the output
     else if (inOperationID == kAudioServerPlugInIOOperationWriteMix)
     {
         FailWithAction(gSharedBuffer == NULL, theAnswer = kAudioHardwareBadObjectError, Done, "NullAudio_DoIOOperation: WriteMix, sharedBuffer is null.");
@@ -4248,27 +4246,7 @@ static OSStatus	NullAudio_DoIOOperation(AudioServerPlugInDriverRef inDriver, Aud
             memcpy(ioMainBuffer, gSharedBuffer, inIOBufferFrameSize * 8);
         }
     }
-    
-    //TODO(SAMIRUA): REMOVE, PLAYING SINE WAVE
-//    if (inOperationID == kAudioServerPlugInIOOperationWriteMix)
-//    {
-//        static float phase = 0;
-//        static float frequency = 440.0;
-//        static float sampleRate = 44100.0;
-//        Float32 *buffer = (Float32 *)ioMainBuffer;
-//        for (UInt32 frame = 0; frame < inIOBufferFrameSize; ++frame)
-//        {
-//            float sample = sinf(phase) * 0.5;  // amplitude is 0.5
-//            for (UInt32 channel = 0; channel < 2; ++channel)
-//            {
-//                *buffer++ = sample;
-//            }
-//
-//            phase += 2.0 * M_PI * frequency / sampleRate;
-//            if (phase >= 2.0 * M_PI) phase -= 2.0 * M_PI;
-//        }
-//    }
-    // End SamiRua Changes-->>
+    // End audiosapper Changes -- >>
 
 Done:
 	return theAnswer;
