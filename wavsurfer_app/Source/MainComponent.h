@@ -27,7 +27,6 @@ public:
 
 private:
     //==============================================================================
-    // Your private member variables go here...
     juce::AudioDeviceManager audioDeviceManager;
     std::vector<float> rms {0.0f, 0.0f};
     std::vector<float> smoothedRms {0.0f, 0.0f};
@@ -35,6 +34,7 @@ private:
     //float smoothingFactor = 0.01;
     float smoothingFactor = 0.1; //0 high smoothing, 1 low smoothing
     std::deque<float> rmsHistory;
+    std::deque<float> rmsHistory2;
     const int maxHistory = 100;
     juce::Image surferImage;
     
