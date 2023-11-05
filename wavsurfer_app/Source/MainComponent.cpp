@@ -82,11 +82,10 @@ void MainComponent::paint (juce::Graphics& g)
     
     // draw surfer halfway through line
     int halfWidth = static_cast<int>((float)rmsHistory.size()/2 / (float)maxHistory * (float)width);
-    int halfHeight_ch1 = juce::jmap(rmsHistory[rmsHistory.size()/2]*10, 0.0f, 1.0f, (float)height, 0.0f) - 80;
-    int halfHeight_ch2 = juce::jmap(rmsHistory2[rmsHistory2.size()/2]*10, 0.0f, 1.0f, (float)height, 0.0f) - 80;
+    int halfHeight = juce::jmap(std::max(rmsHistory[rmsHistory.size()/2], rmsHistory2[rmsHistory.size()/2])*10, 0.0f, 1.0f, (float)height, 0.0f) - 80;
 
     if (!surferImage.isNull()) {
-        g.drawImageAt(surferImage, halfWidth, std::max(halfHeight_ch1, halfHeight_ch2));
+        g.drawImageAt(surferImage, halfWidth, halfHeight);
     }
     
     
