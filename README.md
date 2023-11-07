@@ -13,7 +13,6 @@ Open and build NullAudio.xcodeproj in audiosapper_plugin. Take the plugin folder
 Open wavsurfer_app/wavsurfer.jucer with Projucer, open it in XCode, and run and build the app. Grant microphone access when requested, and enjoy the simple visualizer. 
 
 ## Future work
-I need to add smoothing to the wavsurfer_app display as it is currently pretty jarring.
 
 The audiosapper plugin has some distortion to input sound, especially apparent if you try to writemix audiosapper's output to multiple listeners (say JUCE + QuickTime player). The issue becomes drastically worse with multiple readers, and I am trying to figure out what is causing this. Maybe some real time constraints. 
 
