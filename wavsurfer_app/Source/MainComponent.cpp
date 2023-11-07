@@ -221,14 +221,49 @@ void MainComponent::audioDeviceIOCallbackWithContext (const float *const *inputC
         }
     }
     
-    // decay all existing elements
-    for (auto& channelDq : dqVecs) {
-        for (auto& bandDq : channelDq) {
-            std::transform(bandDq.begin(), bandDq.end(), bandDq.begin(),
-                           [this](float val) { return val * decayFactor; });
+// decay all existing elements by a linear factor
+//    for (auto& channelDq : dqVecs) {
+//        for (auto& bandDq : channelDq) {
+//            std::transform(bandDq.begin(), bandDq.end(), bandDq.begin(),
+//                           [this](float val) { return val * decayFactor; });
+//        }
+//    }
+    
+    
+    // decay existing elements by an increasing factor
+    // TODO: apply an STL algorithm lik ein linear smoothing
+    float decayIncrement = .001; //.001 is pretty sweet
+    for (size_t channelIdx = 0; channelIdx < dqVecs.size(); ++channelIdx) {
+        auto& channelDq = dqVecs[channelIdx];
+        
+        for (size_t bandIdx = 0; bandIdx < channelDq.size(); ++bandIdx) {
+            auto& bandDq = channelDq[bandIdx];
+            // increasing delay on right channel
+            if (channelIdx == 0)
+            {
+                for (size_t i = 0; i < bandDq.size(); ++i) 
+                {
+                    bandDq[i] *= decayFactor - (decayIncrement * i);
+                }
+            }
+            // decreasing delay on right channel. increases complexity of processing but allows us repaint() to paint in one shot
+            else if (channelIdx == 1)
+            {
+                for (size_t i = 0; i < bandDq.size(); ++i)
+                {
+                    bandDq[bandDq.size() - 1 - i] *= decayFactor - (decayIncrement * i);
+                }
+            } 
+            else 
+            {
+                for (auto& val : bandDq)
+                {
+                    val *= decayFactor;
+                }
+            }
         }
     }
-
+    
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> ms_double = end - start;
     std::cout<< "Audio callback took approx " << ms_double.count() << "ms\n";
