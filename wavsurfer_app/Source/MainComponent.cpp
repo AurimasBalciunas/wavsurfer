@@ -73,6 +73,7 @@ void MainComponent::paint (juce::Graphics& g)
     g.drawImage (backgroundImage, getLocalBounds ().toFloat ());
 
     float heightMultiplier = 1;
+    int centerY = height/2;
 
     // Paint every channel's frequency bins
     for (int i = 0; i < supportedChannels; ++i) // channels
@@ -80,36 +81,41 @@ void MainComponent::paint (juce::Graphics& g)
         for (int j = 0; j < numBands; ++j) // freq bands
         {
             // rough height multiplier to account of low freq rms being disproportionately larger
-            heightMultiplier = 3 * pow(5.0 / 4.0, j) / (5 * numBands);
+            heightMultiplier = 3 * pow(10.0 / 4.0, j) / (50 * numBands); //was 5/4
             
             juce::Path rmsPath;
+            juce::Path mirrorPath;
+            
             for (int k = 0; k < dqVecs[i][j].size(); ++k) // rms history deque elements
             {
                 float x = (float)k / (float)maxHistory * (float)width;
-                float y = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)height, 0.0f);
+                float originalY = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)centerY, 0.0f);
+                float mirroredY = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)centerY, (float)height);
+                
                 if (k == 0)
                 {
-                    rmsPath.startNewSubPath(x, y);
+                    rmsPath.startNewSubPath(x, originalY);
+                    mirrorPath.startNewSubPath(x, mirroredY);
                 }
                 else
                 {
-                    rmsPath.lineTo(x, y);
+                    rmsPath.lineTo(x, originalY);
+                    mirrorPath.lineTo(x, mirroredY);
                 }
             }
-
-            // extend path to bottom-right corner
-            float lastX = (float) dqVecs[i][j].size() / (float) maxHistory * (float) width;
-            rmsPath.lineTo(lastX, height);
-
-            // draw line to bottom-left corner
-            rmsPath.lineTo(0, height);
+            
+            
+            rmsPath.lineTo((float)dqVecs[i][j].size() / (float)maxHistory * (float)width, centerY);
+            rmsPath.lineTo(0, centerY);
             rmsPath.closeSubPath();
             
-            g.setColour(juce::Colours::purple.withAlpha(0.3f));
+            mirrorPath.lineTo((float)dqVecs[i][j].size() / (float)maxHistory * (float)width, centerY);
+            mirrorPath.lineTo(0, centerY);
+            mirrorPath.closeSubPath();
+            
+            g.setColour(juce::Colours::blue.withAlpha(0.3f));
             g.fillPath(rmsPath);
-            g.setColour(juce::Colours::purple);
-            g.strokePath(rmsPath, juce::PathStrokeType(2.0f));
-
+            g.fillPath(mirrorPath);
         }
     }
 
@@ -167,7 +173,14 @@ void MainComponent::audioDeviceIOCallbackWithContext (const float *const *inputC
             {
                 if (dqVecs[inputChannel][band].size() >= maxHistory)
                 {
-                    dqVecs[inputChannel][band].pop_front();
+                    if (inputChannel == 0)
+                    {
+                        dqVecs[inputChannel][band].pop_back();
+                    }
+                    else
+                    {
+                        dqVecs[inputChannel][band].pop_front();
+                    }
                 }
                 
                 // Exponential smoothing: newSmoothedValue = ((1 - smoothingFactor) * oldSmoothedValue) + (smoothingFactor * newRawValue)
@@ -175,14 +188,44 @@ void MainComponent::audioDeviceIOCallbackWithContext (const float *const *inputC
                 if (dqSize == 0)
                 {
                     auto smoothedSample = std::sqrt(sumOfSquares / (endBin - startBin));
-                    dqVecs[inputChannel][band].push_back(smoothedSample);
+                    // Left channel
+                    if (inputChannel == 0)
+                    {
+                        dqVecs[inputChannel][band].push_front(smoothedSample);
+                    }
+                    // Right channel
+                    // TODO: Generalize to n input channels?
+                    else
+                    {
+                        dqVecs[inputChannel][band].push_back(smoothedSample);
+                    }
                 }
                 else
                 {
-                    auto smoothedSample = ((1 - smoothingFactor) * dqVecs[inputChannel][band][dqSize - 1]) + (smoothingFactor * std::sqrt(sumOfSquares / (endBin - startBin)));
-                    dqVecs[inputChannel][band].push_back(smoothedSample);
+                    // Left input
+                    if (inputChannel == 0)
+                    {
+                        auto smoothedSample = ((1 - smoothingFactor) * dqVecs[inputChannel][band][0]) + (smoothingFactor * std::sqrt(sumOfSquares / (endBin - startBin)));
+                        dqVecs[inputChannel][band].push_front(smoothedSample);
+                    }
+                    // Right input
+                    // TODO: Generalize to n input channels?
+                    else
+                    {
+                        auto smoothedSample = ((1 - smoothingFactor) * dqVecs[inputChannel][band][dqSize - 1]) + (smoothingFactor * std::sqrt(sumOfSquares / (endBin - startBin)));
+                        dqVecs[inputChannel][band].push_back(smoothedSample);
+                    }
+                    
                 }
             }
+        }
+    }
+    
+    // decay all existing elements
+    for (auto& channelDq : dqVecs) {
+        for (auto& bandDq : channelDq) {
+            std::transform(bandDq.begin(), bandDq.end(), bandDq.begin(),
+                           [this](float val) { return val * decayFactor; });
         }
     }
 
