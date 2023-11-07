@@ -73,7 +73,6 @@ void MainComponent::paint (juce::Graphics& g)
     g.drawImage (backgroundImage, getLocalBounds ().toFloat ());
 
     float heightMultiplier = 1;
-    
     int centerY = height/2;
 
     // Paint every channel's frequency bins
@@ -90,7 +89,6 @@ void MainComponent::paint (juce::Graphics& g)
             for (int k = 0; k < dqVecs[i][j].size(); ++k) // rms history deque elements
             {
                 float x = (float)k / (float)maxHistory * (float)width;
-                //float y = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)height, 0.0f);
                 float originalY = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)centerY, 0.0f);
                 float mirroredY = juce::jmap(dqVecs[i][j][k]*heightMultiplier, 0.0f, 1.0f, (float)centerY, (float)height);
                 
@@ -118,9 +116,6 @@ void MainComponent::paint (juce::Graphics& g)
             g.setColour(juce::Colours::blue.withAlpha(0.3f));
             g.fillPath(rmsPath);
             g.fillPath(mirrorPath);
-            //g.setColour(juce::Colours::blue);
-            //g.strokePath(mirrorPath, juce::PathStrokeType(2.0f));
-            //g.strokePath(rmsPath, juce::PathStrokeType(2.0f));
         }
     }
 
@@ -226,7 +221,7 @@ void MainComponent::audioDeviceIOCallbackWithContext (const float *const *inputC
         }
     }
     
-    // Decay all existing elements
+    // decay all existing elements
     for (auto& channelDq : dqVecs) {
         for (auto& bandDq : channelDq) {
             std::transform(bandDq.begin(), bandDq.end(), bandDq.begin(),
