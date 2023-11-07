@@ -2,7 +2,7 @@
 
 Wavsurfer is a combination of a macOS Core Audio server plug-in that pipes input back as its output (audiosapper_plugin), and a JUCE app that conducts a FFT on the input signal, divides it into low/med/high frequency bins and displays the sampled RMS of each bin over time for each audio channel, in real time.
 
-![JUCE](https://github.com/AurimasBalciunas/wavsurfer/assets/56936689/46f64eb0-0df8-489a-a208-ab3ab091316d)
+![JUCE](https://github.com/AurimasBalciunas/wavsurfer/assets/56936689/4b18653d-daf4-4cb9-9181-0ec526b0aef5)
 *The JUCE app displaying 6 lines of RMS/time (low/mid/high freq bands for 2 channels of audio input)*
 
 Audiosapper pipes its input (what a user application would see as a speaker) to its output (what a user application would see as a microphone). So, if audiosapper is set as the system audio output device, any application can listen to the system audio as though it were the input coming from a microphone.
