@@ -46,6 +46,8 @@ private:
     
     // used for exponential smoothing of displayed signal
     const float smoothingFactor = .15;
+    // used to decay old deque entries
+    const float decayFactor = .985;
     
     // vector containing vector per channel containing deque per freq band to store RMS for painting
     std::vector<std::vector<std::deque<float>>> dqVecs;
