@@ -80,7 +80,6 @@ void MainComponent::paint (juce::Graphics& g)
         for (int j = 0; j < numBands; ++j) // freq bands
         {
             // rough height multiplier to account of low freq rms being disproportionately larger
-            //heightMultiplier = 2 * (j + 1)*(j + 1) / (numBands); //1.0/(numBands + 7 - 2*j); //TODO: generalize to any number of bands
             heightMultiplier = 3 * pow(5.0 / 4.0, j) / (5 * numBands);
             
             juce::Path rmsPath;
