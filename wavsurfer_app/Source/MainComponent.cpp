@@ -80,8 +80,8 @@ void MainComponent::paint (juce::Graphics& g)
         for (int j = 0; j < numBands; ++j) // freq bands
         {
             // rough height multiplier to account of low freq rms being disproportionately larger
-            heightMultiplier = 1.0/(numBands + 1 - j);
-            
+            //heightMultiplier = 2 * (j + 1)*(j + 1) / (numBands); //1.0/(numBands + 7 - 2*j); //TODO: generalize to any number of bands
+            heightMultiplier = 3 * pow(5.0 / 4.0, j) / (5 * numBands);
             
             juce::Path rmsPath;
             for (int k = 0; k < dqVecs[i][j].size(); ++k) // rms history deque elements
@@ -170,7 +170,19 @@ void MainComponent::audioDeviceIOCallbackWithContext (const float *const *inputC
                 {
                     dqVecs[inputChannel][band].pop_front();
                 }
-                dqVecs[inputChannel][band].push_back(std::sqrt(sumOfSquares / (endBin - startBin)));
+                
+                // Exponential smoothing: newSmoothedValue = ((1 - smoothingFactor) * oldSmoothedValue) + (smoothingFactor * newRawValue)
+                auto dqSize = dqVecs[inputChannel][band].size();
+                if (dqSize == 0)
+                {
+                    auto smoothedSample = std::sqrt(sumOfSquares / (endBin - startBin));
+                    dqVecs[inputChannel][band].push_back(smoothedSample);
+                }
+                else
+                {
+                    auto smoothedSample = ((1 - smoothingFactor) * dqVecs[inputChannel][band][dqSize - 1]) + (smoothingFactor * std::sqrt(sumOfSquares / (endBin - startBin)));
+                    dqVecs[inputChannel][band].push_back(smoothedSample);
+                }
             }
         }
     }
