@@ -51,7 +51,7 @@ private:
     
     // vector containing vector per channel containing deque per freq band to store RMS for painting
     std::vector<std::vector<std::deque<float>>> dqVecs;
-    const int maxHistory = 500; // max elements in each deque
+    const int maxHistory = 300; // 500 is pretty smooth
     
     
     // for verifying audiocallback calls per second ~= 44100/512
