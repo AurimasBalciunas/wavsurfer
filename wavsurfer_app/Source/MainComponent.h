@@ -44,10 +44,12 @@ private:
     const float highFreq = 4000.0f;
     const float nyquist = sampleRate / 2.0f;
     
+    // used for exponential smoothing of displayed signal
+    const float smoothingFactor = .15;
     
-    // Vector containing vector per channel containing deque per freq band to store RMS for painting
+    // vector containing vector per channel containing deque per freq band to store RMS for painting
     std::vector<std::vector<std::deque<float>>> dqVecs;
-    const int maxHistory = 100; // max elements in each deque
+    const int maxHistory = 500; // max elements in each deque
     
     
     // for verifying audiocallback calls per second ~= 44100/512
